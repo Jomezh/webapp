@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f4f4;
+            display: flex;
+            height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        .sidebar {
+            width: 60px;
+            background: #2c3e50;
+            color: white;
+            height: 100vh;
+            padding: 20px 10px;
+            position: fixed;
+            transition: width 0.3s ease;
+            overflow: hidden;
+            border-radius: 0 15px 15px 0;
+            z-index: 100;
+        }
+        
+        /* This is the key fix - ensure sidebar expands on hover */
+        .sidebar:hover {
+            width: 250px;
+        }
+        
+        .sidebar.expanded {
+            width: 250px;
+        }
+        
+        .menu-options {
+            opacity: 0;
+            margin-top: 30px;
+            transition: opacity 0.3s ease;
+        }
+        
+        .sidebar:hover .menu-options, 
+        .sidebar.expanded .menu-options {
+            opacity: 1;
+        }
+        
+        .menu-item {
+            display: flex;
+            align-items: center;
+            color: white;
+            text-decoration: none;
+            margin: 15px 0;
+            padding: 12px;
+            border-radius: 8px;
+            background: #34495e;
+            transition: all 0.2s ease;
+        }
+        
+        .menu-item:hover {
+            background: #3498db;
+            transform: translateX(5px);
+        }
+        
+        .menu-item i {
+            margin-right: 15px;
+            font-size: 18px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .hamburger {
+            cursor: pointer;
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .content {
+            margin-left: 80px;
+            flex: 1;
+            padding: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 25px;
+            transition: margin-left 0.3s ease;
+        }
+        
+        /* This is the other key fix - make content move on hover too */
+        .sidebar:hover ~ .content {
+            margin-left: 270px;
+        }
+        
+        .sidebar.expanded ~ .content {
+            margin-left: 270px;
+        }
+        
+        .card {
+            background: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            flex: 1 1 300px;
+        }
+        
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .profile {
+            display: flex;
+            align-items: center;
+        }
+        
+        .profile-pic {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-right: 25px;
+            object-fit: cover;
+            border: 3px solid #3498db;
+        }
+        
+        .profile-placeholder {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            margin-right: 25px;
+            background: #3498db;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 30px;
+        }
+        
+        .profile-info p {
+            margin: 8px 0;
+            font-size: 16px;
+        }
+        
+        .academic-summary {
+            text-align: center;
+        }
+        
+        .metrics-container {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+        }
+        
+        .metric {
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .metric-label {
+            font-size: 14px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        
+        .enrolled-courses {
+            margin-top: 20px;
+        }
+        
+        .course-item {
+            background: #f8f9fa;
+            padding: 10px 15px;
+            margin: 8px 0;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            transition: background 0.2s ease;
+        }
+        
+        .course-item:hover {
+            background: #e9f7fe;
+        }
+        
+        .chart-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            height: 200px;
+        }
+        
+        .chart-text {
+            position: absolute;
+            font-size: 2em;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .progress-container {
+            margin-top: 25px;
+        }
+        
+        .progress-item {
+            margin: 15px 0;
+        }
+        
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background: #e6e6e6;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #3498db;
+            border-radius: 5px;
+            transition: width 1s ease;
+        }
+        
+        .notifications {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .notification {
+            padding: 15px;
+            margin: 8px 0;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            transition: transform 0.2s ease;
+        }
+        
+        .notification:hover {
+            transform: translateX(5px);
+        }
+        
+        .notification i {
+            margin-right: 10px;
+            font-size: 18px;
+        }
+        
+        .warning { 
+            background: #ffebee; 
+            color: #d32f2f; 
+            border-left: 4px solid #d32f2f;
+        }
+        
+        .alert { 
+            background: #fff8e1; 
+            color: #ff8f00; 
+            border-left: 4px solid #ff8f00;
+        }
+        
+        .suggestion { 
+            background: #e8f5e9; 
+            color: #388e3c; 
+            border-left: 4px solid #388e3c;
+        }
+        
+        .card h3 {
+            margin-bottom: 15px;
+            color: #2c3e50;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="sidebar" id="sidebar">
+        <div class="hamburger" id="toggle-btn">
+            <i class="fas fa-bars"></i>
+        </div>
+        <div class="menu-options">
+            <a href="#" class="menu-item">
+                <i class="fas fa-book"></i>
+                <span>Semester Reports</span>
+            </a>
+            <a href="#" class="menu-item">
+                <i class="fas fa-graduation-cap"></i>
+                <span>Course Details</span>
+            </a>
+            <a href="#" class="menu-item">
+                <i class="fas fa-chalkboard-teacher"></i>
+                <span>Faculty Contacts</span>
+            </a>
+            <a href="#" class="menu-item">
+                <i class="fas fa-tools"></i>
+                <span>Resources</span>
+            </a>
+            <a href="#" class="menu-item">
+                <i class="fas fa-calendar-alt"></i>
+                <span>Exam Schedule</span>
+            </a>
+            <a href="#" class="menu-item">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+        </div>
+    </div>
+    
+    <div class="content" id="content">
+        <div class="card profile">
+            <div class="profile-pic-container">
+                <!-- Use actual profile pic if available, otherwise show placeholder -->
+                <div class="profile-placeholder" id="profile-placeholder">
+                    <i class="fas fa-user"></i>
+                </div>
+                <img class="profile-pic" id="profile-pic" src="" style="display: none;">
+            </div>
+            <div class="profile-info">
+                <h3>John Doe</h3>
+                <p><strong>Student ID:</strong> CS2022156</p>
+                <p><strong>Current Semester:</strong> 6th Semester</p>
+                <p><strong>Department:</strong> Computer Science</p>
+            </div>
+        </div>
+        
+        <div class="card academic-summary">
+            <h3>Academic Summary</h3>
+            <div class="metrics-container">
+                <div class="metric">
+                    <div class="metric-value">8.7</div>
+                    <div class="metric-label">SGPA</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">8.3</div>
+                    <div class="metric-label">CGPA</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-value">126/150</div>
+                    <div class="metric-label">Credits</div>
+                </div>
+            </div>
+            
+            <div class="enrolled-courses">
+                <h4>Enrolled Courses</h4>
+                <div class="course-item">CS401: Advanced Algorithms</div>
+                <div class="course-item">CS402: Database Management Systems</div>
+                <div class="course-item">CS403: Computer Networks</div>
+                <div class="course-item">CS404: Software Engineering</div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>Attendance & Course Progress</h3>
+            <div class="chart-container">
+                <canvas id="attendanceChart"></canvas>
+                <div class="chart-text" id="attendanceText">78%</div>
+            </div>
+            
+            <div class="progress-container">
+                <h4>Course Progress</h4>
+                
+                <div class="progress-item">
+                    <div class="progress-label">
+                        <span>Advanced Algorithms</span>
+                        <span>65%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 65%"></div>
+                    </div>
+                </div>
+                
+                <div class="progress-item">
+                    <div class="progress-label">
+                        <span>Database Management Systems</span>
+                        <span>78%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 78%"></div>
+                    </div>
+                </div>
+                
+                <div class="progress-item">
+                    <div class="progress-label">
+                        <span>Computer Networks</span>
+                        <span>42%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 42%"></div>
+                    </div>
+                </div>
+                
+                <div class="progress-item">
+                    <div class="progress-label">
+                        <span>Software Engineering</span>
+                        <span>85%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 85%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card notifications">
+            <h3>Notifications</h3>
+            
+            <div class="notification alert">
+                <i class="fas fa-bell"></i>
+                <div>Course Registration for Summer Semester begins on April 5th</div>
+            </div>
+            
+            <div class="notification warning">
+                <i class="fas fa-exclamation-triangle"></i>
+                <div>Assignment Deadline: Advanced Algorithms Project due in 3 days</div>
+            </div>
+            
+            <div class="notification warning">
+                <i class="fas fa-user-clock"></i>
+                <div>Attendance Alert: Below 75% in Computer Networks</div>
+            </div>
+            
+            <div class="notification suggestion">
+                <i class="fas fa-lightbulb"></i>
+                <div>Recommended Course: Machine Learning (CS501) for next semester</div>
+            </div>
+            
+            <div class="notification alert">
+                <i class="fas fa-calendar-alt"></i>
+                <div>Mid-semester Examination Schedule published</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Sidebar toggle functionality
+        const sidebar = document.getElementById('sidebar');
+        const content = document.getElementById('content');
+        const toggleBtn = document.getElementById('toggle-btn');
+        let isExpanded = false;
+        
+        // Click functionality for permanent toggle
+        toggleBtn.addEventListener('click', function() {
+            isExpanded = !isExpanded;
+            sidebar.classList.toggle('expanded', isExpanded);
+        });
+        
+        // Profile picture handling
+        const profilePic = document.getElementById('profile-pic');
+        const profilePlaceholder = document.getElementById('profile-placeholder');
+        
+        // Simulate checking if profile picture exists
+        const profilePicExists = false; // Set to true if picture exists
+        
+        if (profilePicExists) {
+            profilePic.src = "student_photo.jpg"; // Set the actual image path
+            profilePic.style.display = "block";
+            profilePlaceholder.style.display = "none";
+        } else {
+            profilePic.style.display = "none";
+            profilePlaceholder.style.display = "flex";
+        }
+        
+        // Attendance chart
+        const attendancePercentage = 78; // This would come from your data
+        
+        let ctx = document.getElementById('attendanceChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Present', 'Absent'],
+                datasets: [{
+                    data: [attendancePercentage, 100 - attendancePercentage],
+                    backgroundColor: ['#3498db', '#ecf0f1'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: true
+                    }
+                },
+                animation: {
+                    animateRotate: true,
+                    animateScale: true
+                }
+            }
+        });
+        
+        // Update the text in the center of the chart
+        document.getElementById('attendanceText').textContent = `${attendancePercentage}%`;
+        
+        // Animate the progress bars on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const progressBars = document.querySelectorAll('.progress-fill');
+            
+            progressBars.forEach(bar => {
+                const targetWidth = bar.style.width;
+                bar.style.width = '0%';
+                
+                setTimeout(() => {
+                    bar.style.width = targetWidth;
+                }, 300);
+            });
+        });
+    </script>
+</body>
+</html>
